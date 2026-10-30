@@ -62,7 +62,33 @@
       const a = k * step, c = Math.cos(a), s = Math.sin(a);
       for (const [x, y] of sector) points.push([x * c - y * s, x * s + y * c]);
     }
-    return { points, band: nominal, relief, radius, root: radius - p.depth, flankLength: length, halfOpeningAngle: beta };
+    // Exact analytic boundary shared with STEP; the STL sampling above is unchanged.
+    const tip = half[half.length - 1], bottom = half[0];
+    const flankTip = fillet[0];
+    const mirror = ([x, y]) => [-x, y];
+    const line = (start, end) => ({ type: 'line', start, end });
+    const circle = (start, end, center, radius, ccw) => ({ type: 'arc', start, end, center, radius, ccw });
+    const curves = [];
+    for (let k = 0; k < n; k++) {
+      const a = k * step, c = Math.cos(a), s = Math.sin(a);
+      const rotate = ([x, y]) => [x * c - y * s, x * s + y * c];
+      const nextTip = [tip[0] * Math.cos(step) - tip[1] * Math.sin(step),
+        tip[0] * Math.sin(step) + tip[1] * Math.cos(step)];
+      const sectorCurves = [
+        circle(tip, flankTip, filletCenter, p.tipRadius, true),
+        line(flankTip, tangent),
+        circle(tangent, bottom, center, p.rootRadius, false),
+        line(bottom, mirror(bottom)),
+        circle(mirror(bottom), mirror(tangent), mirror(center), p.rootRadius, false),
+        line(mirror(tangent), mirror(flankTip)),
+        circle(mirror(flankTip), mirror(tip), mirror(filletCenter), p.tipRadius, true),
+        circle(mirror(tip), nextTip, [0, 0], radius, true)
+      ];
+      for (const curve of sectorCurves) curves.push({ ...curve,
+        start: rotate(curve.start), end: rotate(curve.end),
+        ...(curve.center ? { center: rotate(curve.center) } : {}) });
+    }
+    return { points, curves, band: nominal, relief, radius, root: radius - p.depth, flankLength: length, halfOpeningAngle: beta };
   }
   function validate(n, width, testRing = false) {
     if (!Number.isFinite(width) || width < 1 || width > 100) throw new Error('Belt width must be from 1 to 100 mm.');

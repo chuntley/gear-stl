@@ -5,7 +5,7 @@ const path = require('node:path');
 const root = __dirname;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 let html = read('pulley-calculator.template.html');
-for (const file of ['pulley-math.js', 'vendor/earcut.min.js', 'pulley-mesh.js']) {
+for (const file of ['pulley-math.js', 'vendor/earcut.min.js', 'pulley-mesh.js', 'pulley-step.js']) {
   const license = file.includes('earcut') ? `/* Earcut 2.2.4\n${read('vendor/earcut-LICENSE')}\n*/\n` : '';
   html = html.replace(`<script src="${file}"></script>`, () => `<script>\n${license}${read(file).replace(/<\/script/gi, '<\\/script')}\n</script>`);
 }

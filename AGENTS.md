@@ -11,7 +11,9 @@ Preserve these explicit user choices:
 - A table row and its Select button both select that size. The tooth count is
   plain text, and every button always reads Select, never Selected. Use row
   highlighting and `aria-pressed` to convey selection.
-- Download STL appears below the selected dimensions and their belt-pitch note.
+- Download STEP appears before Download STL, each with its own button below
+  the selected dimensions and their belt-pitch note. Both follow row selection
+  and disable when input is invalid.
 - No mounting-hole option, STL-export section, existing-print-check section,
   min/max diameter controls, tooth-count override, or delta column.
 - Output is a 9 mm axial-width solid blank. Mounting features are added in CAD.
@@ -30,6 +32,8 @@ and print advice. Do not turn assumed errors into manufacturer accuracy claims.
   math is retained for regression tests, with no corresponding UI.
 - `pulley-mesh.js`: ISO-derived groove construction, local print-fit relief,
   extrusion, internal test-ring support, and binary STL serialization.
+- `pulley-step.js`: dependency-free analytic AP214 BREP exporter using the same
+  exact arcs/lines as the STL construction, not converted mesh facets.
 - `vendor/earcut.min.js` and `vendor/earcut-LICENSE`: Earcut 2.2.4 under ISC.
 - `build.js`: dependency-free Node builder embedding scripts, license, and image.
 - `pulley-math.test.js`, `pulley-mesh.test.js`: Node regression suites.
@@ -102,7 +106,7 @@ friction, tension, wear, creep, strength, or dynamic-load model.
 
 ## Verification
 
-Run `node --test pulley-math.test.js pulley-mesh.test.js` after changes. It
+Run `node --test pulley-math.test.js pulley-mesh.test.js pulley-step.test.js` after changes. It
 checks dimensions, target cap, row data, invalid input, band boundaries, geometry
 for all 12–200 counts, relief invariants, and every solid/ring serialized STL
 (378 meshes) for manifold edge pairing, normals, positive volume, and width.
@@ -120,3 +124,12 @@ midplane contours, checks connection/validity, and measures groove indexing.
 stated print-error scenarios. Read validation/README.md before interpreting
 results; no physical fit test has been performed. Regenerate examples after
 geometry changes so they match the application.
+
+STEP exports use analytic planar/cylindrical faces, shared vertices/edges,
+closed shells, explicit millimeter units, and AP214 product metadata. Preserve
+local print relief in both formats. STEP has no native SOLIDWORKS feature tree.
+`validation/check_step.py` uses optional cadquery-ocp to check imports, topology,
+face types, dimensions, and mounting-hole boolean cuts. No SOLIDWORKS-specific
+import test has been performed. `validation/check_browser.cjs` uses development-
+only Playwright and Chrome to test an isolated HTML copy offline, including both
+downloads. Neither tool is a runtime dependency.

@@ -1,0 +1,108 @@
+{
+  "method": "Independent Open Cascade STEP import, topology, analytic surface and CAD boolean checks",
+  "cases": [
+    {
+      "teeth": 12,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 60,
+      "planar_faces": 38,
+      "volume_mm3": 1615.170222076735,
+      "mounting_hole_boolean_checked": false
+    },
+    {
+      "teeth": 16,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 80,
+      "planar_faces": 50,
+      "volume_mm3": 3289.2182221573994,
+      "mounting_hole_boolean_checked": false
+    },
+    {
+      "teeth": 17,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 85,
+      "planar_faces": 53,
+      "volume_mm3": 3778.0301496092156,
+      "mounting_hole_boolean_checked": false
+    },
+    {
+      "teeth": 25,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 125,
+      "planar_faces": 77,
+      "volume_mm3": 9124.124759927161,
+      "mounting_hole_boolean_checked": false
+    },
+    {
+      "teeth": 26,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 130,
+      "planar_faces": 80,
+      "volume_mm3": 10047.717878127101,
+      "mounting_hole_boolean_checked": false
+    },
+    {
+      "teeth": 80,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 400,
+      "planar_faces": 242,
+      "volume_mm3": 108217.76981315979,
+      "mounting_hole_boolean_checked": false
+    },
+    {
+      "teeth": 81,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 405,
+      "planar_faces": 245,
+      "volume_mm3": 110911.29094828072,
+      "mounting_hole_boolean_checked": false
+    },
+    {
+      "teeth": 112,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 560,
+      "planar_faces": 338,
+      "volume_mm3": 215515.3796324752,
+      "mounting_hole_boolean_checked": true
+    },
+    {
+      "teeth": 113,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 565,
+      "planar_faces": 341,
+      "volume_mm3": 219462.662723374,
+      "mounting_hole_boolean_checked": false
+    },
+    {
+      "teeth": 192,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 960,
+      "planar_faces": 578,
+      "volume_mm3": 644457.1799127444,
+      "mounting_hole_boolean_checked": true
+    },
+    {
+      "teeth": 200,
+      "valid_solid": true,
+      "width_mm": 9.0,
+      "cylindrical_faces": 1000,
+      "planar_faces": 602,
+      "volume_mm3": 699956.4307278941,
+      "mounting_hole_boolean_checked": false
+    }
+  ],
+  "limitations": [
+    "SOLIDWORKS itself was not available for an application-specific import test.",
+    "Checks CAD export integrity; no new physical belt-fit or load claims."
+  ]
+}

@@ -31,7 +31,7 @@
 </head>
 <body>
 <h1>HTD 5M pulley sizing calculator</h1>
-<p>For your VEX HTD 5 mm belt: enter a target diameter, choose a nearby size, and download its STL.
+<p>For your VEX HTD 5 mm belt: enter a target diameter, choose a nearby size, and download STEP for CAD or STL for printing.
   Save this HTML file and open it in your browser; generation works offline.</p>
 <p class="note">To share, email just <strong>index.html</strong>. All code and images are included. Reference links are optional and require internet access.</p>
 <p class="note">Fixed profile: 5 mm pitch · pitch-line differential 0.5715 mm · outside diameter = pitch diameter − 1.143 mm.
@@ -51,9 +51,11 @@
 <svg id="svg" viewBox="0 0 480 480" role="img" aria-label="Generated pulley tooth outline and pitch circle"></svg>
 <p class="note">Preview uses the same tooth outline as the STL. Blue dashed line = pitch circle. Print at 100% scale, interpreting STL coordinates as millimeters.</p>
 <div id="dimensions"></div>
+<button id="downloadSTEP" type="button" class="row-download" disabled><svg class="stl-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download STEP</button>
 <button id="downloadSTL" type="button" class="row-download" disabled><svg class="stl-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download STL</button>
 <p id="downloadStatus" class="note" aria-live="polite"></p>
-<p class="note">STL face width: 9 mm. Grooves include 0.10 mm of local print-fit allowance; pitch and outside diameter stay fixed. Add mounting features later in CAD.</p>
+<p class="note">STEP contains smooth CAD surfaces for editing in SOLIDWORKS; it imports as a solid without the original feature history. STL is a triangle mesh for printing.</p>
+<p class="note">STEP and STL face width: 9 mm. Grooves include 0.10 mm of local print-fit allowance; pitch and outside diameter stay fixed. Add mounting features later in CAD.</p>
 </section>
 </div>
 <details open>
@@ -99,6 +101,7 @@
 <script src="pulley-math.js"></script>
 <script src="vendor/earcut.min.js"></script>
 <script src="pulley-mesh.js"></script>
+<script src="pulley-step.js"></script>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -134,24 +137,26 @@ function calc() {
     const d = M.dimensions(selected);
     $('dimensions').innerHTML = d ? `<h2>${d.n}-tooth nominal dimensions</h2><dl><dt>Outside diameter</dt><dd>${mmAndIn(d.od)}</dd><dt>Pitch diameter</dt><dd>${mmAndIn(d.pd)}</dd><dt>Angular spacing</dt><dd>${d.angle.toFixed(6)}°</dd><dt>Full pitch circumference</dt><dd>${d.circumference.toFixed(1)} mm</dd></dl><p class="note">Belt pitch: 5.000 mm. Keep these dimensions in CAD and print at 100% scale.</p>` : '';
     $('nearby').innerHTML = '<h2>Nearby nominal sizes</h2><table><caption>Select a size to inspect its dimensions</caption><thead><tr><th>Teeth</th><th>OD (mm)</th><th>OD (in)</th><th>Select</th></tr></thead><tbody>' + result.nearby.map(d => `<tr data-teeth="${d.n}"${d.n === selected ? ' class="selected"' : ''}><td>${d.n}</td><td>${d.od.toFixed(3)}</td><td>${(d.od / 25.4).toFixed(4)}</td><td><button type="button" data-teeth="${d.n}" aria-pressed="${d.n === selected}" aria-label="Select ${d.n} teeth">Select</button></td></tr>`).join('') + '</tbody></table>';
+    $('downloadSTEP').disabled = false;
     $('downloadSTL').disabled = false;
     draw(selected);
   } catch (error) {
     $('results').textContent = error.message;
     $('results').className = 'error';
-    $('nearby').innerHTML = ''; $('dimensions').innerHTML = ''; selected = null; draw(null); $('downloadSTL').disabled = true;
+    $('nearby').innerHTML = ''; $('dimensions').innerHTML = ''; selected = null; draw(null); $('downloadSTEP').disabled = true; $('downloadSTL').disabled = true;
     return;
   }
   $('results').className = '';
 }
-function downloadSTL(n) {
+function downloadFile(n, format) {
   try {
     const width = 9;
-    const model = PulleyMesh.mesh(n, width);
-    const blob = new Blob([PulleyMesh.binarySTL(model)], { type: 'model/stl' });
+    const isStep = format === 'step';
+    const content = isStep ? PulleyStep.step(n, width) : PulleyMesh.binarySTL(PulleyMesh.mesh(n, width));
+    const blob = new Blob([content], { type: isStep ? 'application/step' : 'model/stl' });
     const url = URL.createObjectURL(blob), link = document.createElement('a');
     link.href = url;
-    link.download = `HTD5M_${n}T_OD${M.dimensions(n).od.toFixed(3)}mm_W9mm_fit${model.relief.toFixed(2)}mm_solid.stl`;
+    link.download = `HTD5M_${n}T_OD${M.dimensions(n).od.toFixed(3)}mm_W9mm_fit${PulleyMesh.PRINT_RELIEF.toFixed(2)}mm_solid.${format}`;
     document.body.appendChild(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     $('downloadStatus').className = 'note';
@@ -171,7 +176,8 @@ $('nearby').addEventListener('click', event => {
   const button = event.target.closest('[data-teeth]');
   if (button) { selected = Number(button.dataset.teeth); calc(); }
 });
-$('downloadSTL').addEventListener('click', () => downloadSTL(selected));
+$('downloadSTEP').addEventListener('click', () => downloadFile(selected, 'step'));
+$('downloadSTL').addEventListener('click', () => downloadFile(selected, 'stl'));
 function updateInputBounds() {
   const factor = $('units').value === 'in' ? 25.4 : 1;
   $('odt').min = M.dimensions(M.MIN_TEETH).od / factor;

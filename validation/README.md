@@ -7,7 +7,7 @@ study below; it is not a claim of ISO certification or measured printer accuracy
 
 ## Results
 
-- **14 Node tests**, including serialized geometry checks for **378 meshes**:
+- **17 Node tests**, including serialized geometry checks for **378 meshes**:
   solid and test-ring versions of every count from 12 through 200. Checks cover
   paired/oppositely oriented edges, valid normals, nondegenerate triangles,
   positive volume, dimensions, target limits, and print-relief invariants.
@@ -135,7 +135,7 @@ checks use:
 
 ```sh
 node build.js
-node --test pulley-math.test.js pulley-mesh.test.js
+node --test pulley-math.test.js pulley-mesh.test.js pulley-step.test.js
 python -m pip install numpy trimesh shapely matplotlib
 python validation/check_geometry.py
 python validation/check_print_fit.py
@@ -143,3 +143,35 @@ python validation/check_print_fit.py
 
 Scripts write JSON and plots beside themselves. Review their assumptions before
 changing thresholds; a pass only applies to the modeled error envelope.
+
+## STEP export checks
+
+The STEP AP214 exporter uses the exact analytic profile shared with STL sampling.
+Node tests check closed/tangent curve joins across every count from 12–200, arc
+radii, agreement with the STL outline within its chordal bound, paired boundary
+edges, entity references, units, and button order. STEP uses planar and cylindrical
+surfaces; there are no triangulated, faceted, or fitted-spline substitutes.
+
+`check_step.py` independently reads actual exports with Open Cascade at 12, 16,
+17, 25, 26, 80, 81, 112, 113, 192, and 200 teeth. It checks one valid solid,
+9 mm width, analytic surface counts, bounds, and positive volume. At 112 and
+192 teeth it also cuts a 6 mm central mounting hole and verifies the resulting
+solid and removed volume. This hole exists only in the validation operation;
+production downloads remain solid blanks. See [results](step-results.json).
+SOLIDWORKS itself was unavailable; these checks do not claim a SOLIDWORKS-specific
+import certification or change the physical-fit limitations above.
+
+Optional development checks:
+
+```sh
+python -m pip install cadquery-ocp
+python validation/check_step.py
+# With Playwright installed and Google Chrome available:
+node validation/check_browser.cjs
+```
+
+If Playwright is installed outside the usual Node module search path, set
+`PLAYWRIGHT_MODULE` to its module directory. Browser checks copy only `index.html`
+to a temporary directory, disable network access, test both STEP/STL downloads,
+selection, invalid-state disabling, cap handling, and mobile layout, then remove
+the temporary directory. End users need none of these development tools.

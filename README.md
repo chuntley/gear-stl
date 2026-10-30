@@ -1,10 +1,10 @@
-# HTD 5M pulley STL generator
+# HTD 5M pulley CAD and STL generator
 
 [Open the calculator](https://chuntley.github.io/gear-stl/). GitHub Pages serves
 `index.html` from the root of `main`. The same file also works offline.
 
 Double-click **`index.html`**. It is a self-contained offline
-application; no installation, server, or internet is needed to generate STLs.
+application; no installation, server, or internet is needed to generate STEP or STL files.
 Email just **`index.html`** as an attachment. The recipient saves it
 to their computer and opens it in a modern browser. All code, styling, and the
 reference image are embedded; no other project files are needed. Online
@@ -13,8 +13,9 @@ reference links are optional.
 1. Enter a target **outside diameter**, up to **12 in / 304.8 mm**.
 2. Click a nearby row or its **Select** button. The tooth count is plain text;
    the highlighted row indicates the selected size.
-3. Click **Download STL** below the dimensions. The STL is a **9 mm wide solid
-   pulley blank**, with mounting features left for CAD.
+3. Click **Download STEP** for SOLIDWORKS/CAD or **Download STL** for printing.
+   Both export the selected **9 mm wide solid pulley blank**, with mounting
+   features left for CAD.
 4. Import the STL as **millimeters**, at **100% scale**. Do not resize it to
    force the exact target diameter; the selected tooth count determines its OD.
 
@@ -31,6 +32,23 @@ an ISO-certified part. Test the actual belt before committing to the final part.
 rings, all 9 mm wide. Test rings have 3 mm of radial material below the groove
 roots. They allow a full-diameter fit test without printing a solid disk. No
 mounting-hole, width, or existing-print diagnostic controls are exposed in the UI.
+
+## CAD export
+
+STEP AP214 exports a closed solid with exact circular arcs, cylindrical groove
+surfaces, and planar faces. It comes directly from the same analytic construction
+as STL, rather than converting mesh triangles. Both formats preserve the selected
+outside diameter, 9 mm width, and 0.10 mm groove allowance; STL approximates curved
+surfaces to the documented 0.002 mm chordal tolerance.
+
+Open the `.step` file in SOLIDWORKS, add mounting features, and save as `.sldprt`.
+The imported solid has no native parametric tooth-pattern history. Generate a new
+size in the calculator to change tooth count. STEP files include millimeter units.
+The exporter is embedded in the same standalone HTML and works offline.
+
+Independent Open Cascade checks confirm valid solids and successful mounting-hole
+boolean cuts at representative sizes. SOLIDWORKS itself was not available for an
+application-specific import test; see [STEP results](validation/step-results.json).
 
 ## Printing
 
@@ -65,11 +83,11 @@ accuracy; the full-diameter test ring remains the final fit check.
 
 ## Development
 
-Edit `pulley-calculator.template.html`, `pulley-math.js`, or `pulley-mesh.js`, then:
+Edit the template, sizing, mesh, or STEP source, then:
 
 ```sh
 node build.js
-node --test pulley-math.test.js pulley-mesh.test.js
+node --test pulley-math.test.js pulley-mesh.test.js pulley-step.test.js
 ```
 
 Node is required only for development. The generated HTML embeds these sources,

@@ -31,7 +31,7 @@
 </head>
 <body>
 <h1>HTD 5M pulley sizing calculator</h1>
-<p>For your VEX HTD 5 mm belt: enter a target diameter, choose a nearby size, and download its STL.
+<p>For your VEX HTD 5 mm belt: enter a target diameter, choose a nearby size, and download STEP for CAD or STL for printing.
   Save this HTML file and open it in your browser; generation works offline.</p>
 <p class="note">To share, email just <strong>index.html</strong>. All code and images are included. Reference links are optional and require internet access.</p>
 <p class="note">Fixed profile: 5 mm pitch · pitch-line differential 0.5715 mm · outside diameter = pitch diameter − 1.143 mm.
@@ -51,9 +51,11 @@
 <svg id="svg" viewBox="0 0 480 480" role="img" aria-label="Generated pulley tooth outline and pitch circle"></svg>
 <p class="note">Preview uses the same tooth outline as the STL. Blue dashed line = pitch circle. Print at 100% scale, interpreting STL coordinates as millimeters.</p>
 <div id="dimensions"></div>
+<button id="downloadSTEP" type="button" class="row-download" disabled><svg class="stl-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download STEP</button>
 <button id="downloadSTL" type="button" class="row-download" disabled><svg class="stl-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download STL</button>
 <p id="downloadStatus" class="note" aria-live="polite"></p>
-<p class="note">STL face width: 9 mm. Grooves include 0.10 mm of local print-fit allowance; pitch and outside diameter stay fixed. Add mounting features later in CAD.</p>
+<p class="note">STEP contains smooth CAD surfaces for editing in SOLIDWORKS; it imports as a solid without the original feature history. STL is a triangle mesh for printing.</p>
+<p class="note">STEP and STL face width: 9 mm. Grooves include 0.10 mm of local print-fit allowance; pitch and outside diameter stay fixed. Add mounting features later in CAD.</p>
 </section>
 </div>
 <details open>
@@ -236,7 +238,33 @@ THIS SOFTWARE.
       const a = k * step, c = Math.cos(a), s = Math.sin(a);
       for (const [x, y] of sector) points.push([x * c - y * s, x * s + y * c]);
     }
-    return { points, band: nominal, relief, radius, root: radius - p.depth, flankLength: length, halfOpeningAngle: beta };
+    // Exact analytic boundary shared with STEP; the STL sampling above is unchanged.
+    const tip = half[half.length - 1], bottom = half[0];
+    const flankTip = fillet[0];
+    const mirror = ([x, y]) => [-x, y];
+    const line = (start, end) => ({ type: 'line', start, end });
+    const circle = (start, end, center, radius, ccw) => ({ type: 'arc', start, end, center, radius, ccw });
+    const curves = [];
+    for (let k = 0; k < n; k++) {
+      const a = k * step, c = Math.cos(a), s = Math.sin(a);
+      const rotate = ([x, y]) => [x * c - y * s, x * s + y * c];
+      const nextTip = [tip[0] * Math.cos(step) - tip[1] * Math.sin(step),
+        tip[0] * Math.sin(step) + tip[1] * Math.cos(step)];
+      const sectorCurves = [
+        circle(tip, flankTip, filletCenter, p.tipRadius, true),
+        line(flankTip, tangent),
+        circle(tangent, bottom, center, p.rootRadius, false),
+        line(bottom, mirror(bottom)),
+        circle(mirror(bottom), mirror(tangent), mirror(center), p.rootRadius, false),
+        line(mirror(tangent), mirror(flankTip)),
+        circle(mirror(flankTip), mirror(tip), mirror(filletCenter), p.tipRadius, true),
+        circle(mirror(tip), nextTip, [0, 0], radius, true)
+      ];
+      for (const curve of sectorCurves) curves.push({ ...curve,
+        start: rotate(curve.start), end: rotate(curve.end),
+        ...(curve.center ? { center: rotate(curve.center) } : {}) });
+    }
+    return { points, curves, band: nominal, relief, radius, root: radius - p.depth, flankLength: length, halfOpeningAngle: beta };
   }
   function validate(n, width, testRing = false) {
     if (!Number.isFinite(width) || width < 1 || width > 100) throw new Error('Belt width must be from 1 to 100 mm.');
@@ -302,6 +330,100 @@ THIS SOFTWARE.
 
 </script>
 <script>
+/* Analytic STEP AP214 solid export. No mesh conversion or runtime dependencies. */
+(function (root) {
+  'use strict';
+  const G = typeof module !== 'undefined' && module.exports ? require('./pulley-mesh') : root.PulleyMesh;
+  function step(n, width = 9) {
+    const { shape } = G.validate(n, width);
+    const rows = [];
+    const add = entity => { rows.push(`#${rows.length + 1}=${entity};`); return `#${rows.length}`; };
+    const real = value => {
+      if (!Number.isFinite(value)) throw new Error('Invalid STEP coordinate.');
+      const text = (Math.abs(value) < 1e-14 ? 0 : value).toPrecision(16);
+      return text.replace('e', 'E');
+    };
+    const list = refs => `(${refs.join(',')})`;
+    const point = xyz => add(`CARTESIAN_POINT('',${list(xyz.map(real))})`);
+    const direction = xyz => add(`DIRECTION('',${list(xyz.map(real))})`);
+    const zAxis = direction([0, 0, 1]), xAxis = direction([1, 0, 0]);
+    const axis = (xyz, normal = zAxis, reference = xAxis) => add(`AXIS2_PLACEMENT_3D('',${point(xyz)},${normal},${reference})`);
+    const origin = axis([0, 0, 0]);
+    const vector = (unit, length) => add(`VECTOR('',${unit},${real(length)})`);
+    const vertex = xyz => {
+      const p = point(xyz);
+      return { point: p, ref: add(`VERTEX_POINT('',${p})`) };
+    };
+    const edge = (a, b, curve, forward = true) => add(`EDGE_CURVE('',${a.ref},${b.ref},${curve},${forward ? '.T.' : '.F.'})`);
+    const oriented = (ref, forward = true) => add(`ORIENTED_EDGE('',*,*,${ref},${forward ? '.T.' : '.F.'})`);
+    const face = (edges, surface, forward = true) => {
+      const loop = add(`EDGE_LOOP('',${list(edges)})`);
+      const bound = add(`FACE_OUTER_BOUND('',${loop},.T.)`);
+      return add(`ADVANCED_FACE('',(${bound}),${surface},${forward ? '.T.' : '.F.'})`);
+    };
+    // Reuse vertices and edges at each join, including the final seam.
+    const curves = shape.curves;
+    const lower = curves.map(c => vertex([...c.start, 0]));
+    const upper = curves.map(c => vertex([...c.start, width]));
+    const vertical = curves.map((c, i) => edge(lower[i], upper[i],
+      add(`LINE('',${lower[i].point},${vector(zAxis, 1)})`)));
+    const lowerEdges = [], upperEdges = [], walls = [];
+    curves.forEach((c, i) => {
+      const j = (i + 1) % curves.length;
+      let bottomCurve, topCurve, surface;
+      if (c.type === 'arc') {
+        const bottomAxis = axis([...c.center, 0]);
+        bottomCurve = add(`CIRCLE('',${bottomAxis},${real(c.radius)})`);
+        topCurve = add(`CIRCLE('',${axis([...c.center, width])},${real(c.radius)})`);
+        surface = add(`CYLINDRICAL_SURFACE('',${bottomAxis},${real(c.radius)})`);
+      } else {
+        const dx = c.end[0] - c.start[0], dy = c.end[1] - c.start[1];
+        const length = Math.hypot(dx, dy);
+        const along = direction([dx / length, dy / length, 0]);
+        const v = vector(along, 1);
+        bottomCurve = add(`LINE('',${lower[i].point},${v})`);
+        topCurve = add(`LINE('',${upper[i].point},${v})`);
+        surface = add(`PLANE('',${axis([...c.start, 0], direction([dy / length, -dx / length, 0]), along)})`);
+      }
+      const forward = c.type === 'line' || c.ccw;
+      const bottom = edge(lower[i], lower[j], bottomCurve, forward);
+      const top = edge(upper[i], upper[j], topCurve, forward);
+      lowerEdges.push(bottom); upperEdges.push(top);
+      walls.push(face([oriented(bottom), oriented(vertical[j]), oriented(top, false), oriented(vertical[i], false)], surface, forward));
+    });
+    const bottomPlane = add(`PLANE('',${origin})`);
+    const topPlane = add(`PLANE('',${axis([0, 0, width])})`);
+    const bottom = face([...lowerEdges].reverse().map(e => oriented(e, false)), bottomPlane, false);
+    const top = face(upperEdges.map(e => oriented(e)), topPlane);
+    const shell = add(`CLOSED_SHELL('',${list([bottom, top, ...walls])})`);
+    const name = `HTD5M ${n}T W${width}mm fit${shape.relief.toFixed(2)}mm`;
+    const solid = add(`MANIFOLD_SOLID_BREP('${name}',${shell})`);
+    const mm = add('(LENGTH_UNIT()NAMED_UNIT(*)SI_UNIT(.MILLI.,.METRE.))');
+    const rad = add('(NAMED_UNIT(*)PLANE_ANGLE_UNIT()SI_UNIT($,.RADIAN.))');
+    const sterad = add('(NAMED_UNIT(*)SI_UNIT($,.STERADIAN.)SOLID_ANGLE_UNIT())');
+    const uncertainty = add(`UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(1.E-7),${mm},'distance_accuracy_value','')`);
+    const context = add(`(GEOMETRIC_REPRESENTATION_CONTEXT(3)GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((${uncertainty}))GLOBAL_UNIT_ASSIGNED_CONTEXT((${mm},${rad},${sterad}))REPRESENTATION_CONTEXT('','3D'))`);
+    const representation = add(`ADVANCED_BREP_SHAPE_REPRESENTATION('${name}',(${origin},${solid}),${context})`);
+    const app = add("APPLICATION_CONTEXT('automotive design')");
+    add(`APPLICATION_PROTOCOL_DEFINITION('international standard','automotive_design',2000,${app})`);
+    const productContext = add(`PRODUCT_CONTEXT('',${app},'mechanical')`);
+    const product = add(`PRODUCT('${name}','${name}','',(${productContext}))`);
+    const formation = add(`PRODUCT_DEFINITION_FORMATION('','',${product})`);
+    const definitionContext = add(`PRODUCT_DEFINITION_CONTEXT('part definition',${app},'design')`);
+    const definition = add(`PRODUCT_DEFINITION('design','',${formation},${definitionContext})`);
+    const productShape = add(`PRODUCT_DEFINITION_SHAPE('','',${definition})`);
+    add(`SHAPE_DEFINITION_REPRESENTATION(${productShape},${representation})`);
+    return "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('Analytic HTD5M pulley solid; units=mm'),'2;1');\n" +
+      `FILE_NAME('HTD5M_${n}T.step','${new Date().toISOString()}',(''),(''),'HTD5M calculator','HTD5M calculator','');\n` +
+      "FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));\nENDSEC;\nDATA;\n" + rows.join('\n') + '\nENDSEC;\nEND-ISO-10303-21;\n';
+  }
+  const api = { step };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.PulleyStep = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
 'use strict';
 const $ = id => document.getElementById(id);
 const M = PulleyMath;
@@ -336,24 +458,26 @@ function calc() {
     const d = M.dimensions(selected);
     $('dimensions').innerHTML = d ? `<h2>${d.n}-tooth nominal dimensions</h2><dl><dt>Outside diameter</dt><dd>${mmAndIn(d.od)}</dd><dt>Pitch diameter</dt><dd>${mmAndIn(d.pd)}</dd><dt>Angular spacing</dt><dd>${d.angle.toFixed(6)}°</dd><dt>Full pitch circumference</dt><dd>${d.circumference.toFixed(1)} mm</dd></dl><p class="note">Belt pitch: 5.000 mm. Keep these dimensions in CAD and print at 100% scale.</p>` : '';
     $('nearby').innerHTML = '<h2>Nearby nominal sizes</h2><table><caption>Select a size to inspect its dimensions</caption><thead><tr><th>Teeth</th><th>OD (mm)</th><th>OD (in)</th><th>Select</th></tr></thead><tbody>' + result.nearby.map(d => `<tr data-teeth="${d.n}"${d.n === selected ? ' class="selected"' : ''}><td>${d.n}</td><td>${d.od.toFixed(3)}</td><td>${(d.od / 25.4).toFixed(4)}</td><td><button type="button" data-teeth="${d.n}" aria-pressed="${d.n === selected}" aria-label="Select ${d.n} teeth">Select</button></td></tr>`).join('') + '</tbody></table>';
+    $('downloadSTEP').disabled = false;
     $('downloadSTL').disabled = false;
     draw(selected);
   } catch (error) {
     $('results').textContent = error.message;
     $('results').className = 'error';
-    $('nearby').innerHTML = ''; $('dimensions').innerHTML = ''; selected = null; draw(null); $('downloadSTL').disabled = true;
+    $('nearby').innerHTML = ''; $('dimensions').innerHTML = ''; selected = null; draw(null); $('downloadSTEP').disabled = true; $('downloadSTL').disabled = true;
     return;
   }
   $('results').className = '';
 }
-function downloadSTL(n) {
+function downloadFile(n, format) {
   try {
     const width = 9;
-    const model = PulleyMesh.mesh(n, width);
-    const blob = new Blob([PulleyMesh.binarySTL(model)], { type: 'model/stl' });
+    const isStep = format === 'step';
+    const content = isStep ? PulleyStep.step(n, width) : PulleyMesh.binarySTL(PulleyMesh.mesh(n, width));
+    const blob = new Blob([content], { type: isStep ? 'application/step' : 'model/stl' });
     const url = URL.createObjectURL(blob), link = document.createElement('a');
     link.href = url;
-    link.download = `HTD5M_${n}T_OD${M.dimensions(n).od.toFixed(3)}mm_W9mm_fit${model.relief.toFixed(2)}mm_solid.stl`;
+    link.download = `HTD5M_${n}T_OD${M.dimensions(n).od.toFixed(3)}mm_W9mm_fit${PulleyMesh.PRINT_RELIEF.toFixed(2)}mm_solid.${format}`;
     document.body.appendChild(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     $('downloadStatus').className = 'note';
@@ -373,7 +497,8 @@ $('nearby').addEventListener('click', event => {
   const button = event.target.closest('[data-teeth]');
   if (button) { selected = Number(button.dataset.teeth); calc(); }
 });
-$('downloadSTL').addEventListener('click', () => downloadSTL(selected));
+$('downloadSTEP').addEventListener('click', () => downloadFile(selected, 'step'));
+$('downloadSTL').addEventListener('click', () => downloadFile(selected, 'stl'));
 function updateInputBounds() {
   const factor = $('units').value === 'in' ? 25.4 : 1;
   $('odt').min = M.dimensions(M.MIN_TEETH).od / factor;

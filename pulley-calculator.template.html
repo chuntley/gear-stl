@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTD 5M Pulley Sizing Calculator</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 24px auto; padding: 0 16px; max-width: 1100px; color: #222; line-height: 1.5; }
+  h1 { font-size: 26px; } h2 { font-size: 20px; }
+  .row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .column { flex: 1; min-width: min(100%, 340px); }
+  fieldset { border: 1px solid #bbb; padding: 12px 16px; border-radius: 6px; margin: 12px 0; }
+  legend { font-weight: bold; }
+  label { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 10px 0; }
+  input, select, button { padding: 7px; font: inherit; } input { width: 110px; }
+  button { cursor: pointer; } :focus-visible { outline: 3px solid #185fa5; outline-offset: 2px; }
+  .note { color: #444; font-size: 14px; } .status { padding: 12px; border-left: 4px solid #187052; background: #eef8f2; }
+  .warning { border-left-color: #a34711; background: #fff3e7; } .error { color: #9a2418; }
+  svg { width: 100%; height: auto; border: 1px solid #ddd; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+  th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid #ddd; } th:first-child, td:first-child { text-align: left; }
+  dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } dt { font-weight: bold; } dd { margin: 0; }
+  details { margin: 20px 0; } summary { cursor: pointer; font-weight: bold; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #f3f6fa; }
+  tbody tr.selected { background: #edf4fc; }
+  .row-download { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .stl-icon { width: 16px; height: 16px; border: 0; flex: none; }
+  button:disabled { cursor: default; opacity: .5; }
+</style>
+</head>
+<body>
+<h1>HTD 5M pulley sizing calculator</h1>
+<p>For your VEX HTD 5 mm belt: enter a target diameter, choose a nearby size, and download its STL.
+  Save this HTML file and open it in your browser; generation works offline.</p>
+<p class="note">To share, email just <strong>index.html</strong>. All code and images are included. Reference links are optional and require internet access.</p>
+<p class="note">Fixed profile: 5 mm pitch · pitch-line differential 0.5715 mm · outside diameter = pitch diameter − 1.143 mm.
+  <a href="#references">Manufacturer reference and CAD</a>.</p>
+<div class="row">
+<section class="column" aria-label="Pulley selection">
+<fieldset>
+  <legend>Target diameter</legend>
+  <label for="units">Diameter input units <select id="units"><option value="in">inches</option><option value="mm">millimeters</option></select></label>
+  <label for="odt">Target outside diameter <input id="odt" type="number" step="any" min="0" max="12" value="7"></label>
+  <p class="note">Choose a nearby size below to inspect its dimensions. Maximum target: 12 in (304.8 mm). Available options stay within this limit.</p>
+</fieldset>
+<div id="results" aria-live="polite" aria-atomic="true"></div>
+<div id="nearby"></div>
+</section>
+<section class="column" aria-label="Pulley dimensions">
+<svg id="svg" viewBox="0 0 480 480" role="img" aria-label="Generated pulley tooth outline and pitch circle"></svg>
+<p class="note">Preview uses the same tooth outline as the STL. Blue dashed line = pitch circle. Print at 100% scale, interpreting STL coordinates as millimeters.</p>
+<div id="dimensions"></div>
+<button id="downloadSTL" type="button" class="row-download" disabled><svg class="stl-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download STL</button>
+<p id="downloadStatus" class="note" aria-live="polite"></p>
+<p class="note">STL face width: 9 mm. Grooves include 0.10 mm of local print-fit allowance; pitch and outside diameter stay fixed. Add mounting features later in CAD.</p>
+</section>
+</div>
+<details open>
+<summary>Making a pulley that fits</summary>
+<ol>
+  <li>Use the selected tooth count and nominal outside diameter. Repeat the proper HTD 5M groove at the displayed angular spacing; do not distribute 5 mm along the outside circumference.</li>
+  <li>The exporter starts from the count-dependent ISO 13050:2022 H5M profile and applies a 0.10 mm local groove allowance for printing. Pitch and outside diameter stay fixed; do not scale it to another diameter.</li>
+  <li>Provide belt-width clearance, suitable flanges, and the required bore and hub. This calculator does not size these features or assess belt tension, loads, or service life.</li>
+  <li>Print a test ring or prototype at 100% scale. Check roundness, groove seating, and engagement around the full ring with the actual belt before printing the final pulley.</li>
+</ol>
+<p>Nominal dimensions do not guarantee a printed fit. Groove shape, belt seating, printer accuracy, and belt condition must also be checked. Change manufacturing clearance locally only after checking pitch and scale.</p>
+</details>
+<details>
+<summary>3D printing notes</summary>
+<ul>
+  <li>Print flat, with the shaft axis vertical, so the tooth shape is formed in the XY plane. Use the matching material profile and calibrate extrusion flow.</li>
+  <li>With a 0.4 mm nozzle, start with 0.16–0.20 mm layers, moderate outer-wall speed, and enough walls to keep the teeth solid. Inspect the sliced tooth paths.</li>
+  <li>Compensate and remove first-layer bulging. Keep seams and blobs away from groove flanks, and do not let a brim fill the grooves.</li>
+  <li>Measure the printed diameter in multiple directions. Check belt seating through the full intended wrap; a short sector cannot reveal accumulated pitch error.</li>
+  <li>PLA is suitable for a first fit test. PETG offers more temperature margin, but material choice, mounting, alignment, belt tension, and operating load still need validation.</li>
+</ul>
+<p class="note">The fit allowance was checked with assumed print errors, not measured printer accuracy or a scan of your particular belt. It cannot compensate for a badly scaled or distorted print.</p>
+</details>
+<details>
+<summary>Formulas and terms</summary>
+<p>All calculations use millimeters internally. For tooth count N: pitch diameter = N × 5 / π;
+  outside diameter = pitch diameter − 2 × 0.5715; angular spacing = 360° / N;
+  full pitch circumference = N × 5. Pitch is measured along the belt’s pitch line, not as a straight chord between pulley teeth.</p>
+<p>The pitch circle coincides with the seated belt’s pitch line. It is an imaginary reference above the pulley tooth tips, not a circle through the groove centers.
+  Full pitch circumference is not the contact length of a partially wrapped belt.</p>
+</details>
+<section id="references">
+<h2>Manufacturer profile reference and CAD</h2>
+<p><a href="https://my.misumi-ec.com/pdf/my/economy_catalog/misumi_economy_timing_pulleys_idlers_timing_belts.pdf">MISUMI timing pulley catalog (online PDF)</a>:
+  contains pulley dimensional tables (printed pages 541–542) and belt pitch-line data (page 589). The groove drawing below is from MISUMI’s matching HTD 5M product page.
+</p>
+<figure><img src="references/misumi-htd5m-profile.jpg" width="201" height="171" alt="MISUMI HTD 5M pulley groove drawing showing 2.16 mm depth, R1.56 and R0.5 radii, approximately 14 degree flank angle, and 0.572 mm rounded pitch-line offset"><figcaption class="note">MISUMI HTD 5M pulley groove reference, dimensions in mm. <a href="https://th.misumi-ec.com/en/vona2/detail/110310532889/">Manufacturer product page</a>. MISUMI notes groove dimensions vary slightly with tooth count. This manufacturer illustration is a general reference; STL geometry uses the count-dependent ISO construction below.</figcaption></figure>
+<p>The base profile follows <a href="https://www.iso.org/standard/82453.html">ISO 13050:2022</a>, Table 14 and Figure 11,
+  for 12–200 H5M grooves. The exported profile adds 0.10 mm of root/flank clearance and reblends to the unchanged outside circle. It uses four parameter bands, not a scaled circle or a traced picture. Root arcs, straight flanks, and tip blends are tangent; tip blends meet the selected outside circle. Arcs are meshed to at most 0.002 mm chordal deviation before STL coordinate rounding. This is not an ISO certification or a tested VEX part.</p>
+<p><a href="https://www.traceparts.com/en/product/gates-pulley-htd-5m?Product=32-30092010-109669">Gates HTD 5M manufacturer CAD catalog on TraceParts</a>
+  offers CAD for listed stock tooth counts; downloads may require sign-in. This is an alternative source for stock manufacturer models.</p>
+</section>
+<script src="pulley-math.js"></script>
+<script src="vendor/earcut.min.js"></script>
+<script src="pulley-mesh.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const M = PulleyMath;
+let previousUnits = $('units').value;
+let selected = null;
+const read = id => $(id).value.trim() === '' ? NaN : Number($(id).value);
+const mmAndIn = mm => `${mm.toFixed(3)} mm (${(mm / 25.4).toFixed(4)} in)`;
+function draw(n) {
+  if (n === null) {
+    $('svg').innerHTML = '<text x="240" y="220" text-anchor="middle">No size selected.</text><text x="240" y="245" text-anchor="middle">Choose a nearby tooth count to inspect.</text>';
+    return;
+  }
+  const d = M.dimensions(n), scale = 190 / (d.pd / 2);
+  let svg = '';
+  if (n <= 200) {
+    const points = PulleyMesh.outline(n).points;
+    svg += `<polygon points="${points.map(([x, y]) => `${240 + x * scale},${230 - y * scale}`).join(' ')}" fill="#e4e6ea" stroke="#555" stroke-width="0.8"/>`;
+  } else {
+    svg += `<circle cx="240" cy="230" r="${d.od / 2 * scale}" fill="#e4e6ea" stroke="#666"/>`;
+  }
+  svg += `<circle cx="240" cy="230" r="190" fill="none" stroke="#185fa5" stroke-dasharray="6 4"/><circle cx="240" cy="230" r="3"/><text x="240" y="450" text-anchor="middle">${n} teeth · ${n <= 200 ? 'STL outline' : 'dimensions only; no STL profile'}</text>`;
+  $('svg').innerHTML = svg;
+}
+function calc() {
+  $('downloadStatus').textContent = '';
+  try {
+    const factor = $('units').value === 'in' ? 25.4 : 1;
+    const target = read('odt') * factor;
+    const result = M.options(target);
+    if (selected === null || !result.nearby.some(d => d.n === selected)) selected = result.nearest;
+    $('results').innerHTML = `<p class="status">Closest size: <b>${result.nearest} teeth</b> · ${mmAndIn(M.dimensions(result.nearest).od)}</p>`;
+    const d = M.dimensions(selected);
+    $('dimensions').innerHTML = d ? `<h2>${d.n}-tooth nominal dimensions</h2><dl><dt>Outside diameter</dt><dd>${mmAndIn(d.od)}</dd><dt>Pitch diameter</dt><dd>${mmAndIn(d.pd)}</dd><dt>Angular spacing</dt><dd>${d.angle.toFixed(6)}°</dd><dt>Full pitch circumference</dt><dd>${d.circumference.toFixed(1)} mm</dd></dl><p class="note">Belt pitch: 5.000 mm. Keep these dimensions in CAD and print at 100% scale.</p>` : '';
+    $('nearby').innerHTML = '<h2>Nearby nominal sizes</h2><table><caption>Select a size to inspect its dimensions</caption><thead><tr><th>Teeth</th><th>OD (mm)</th><th>OD (in)</th><th>Select</th></tr></thead><tbody>' + result.nearby.map(d => `<tr data-teeth="${d.n}"${d.n === selected ? ' class="selected"' : ''}><td>${d.n}</td><td>${d.od.toFixed(3)}</td><td>${(d.od / 25.4).toFixed(4)}</td><td><button type="button" data-teeth="${d.n}" aria-pressed="${d.n === selected}" aria-label="Select ${d.n} teeth">Select</button></td></tr>`).join('') + '</tbody></table>';
+    $('downloadSTL').disabled = false;
+    draw(selected);
+  } catch (error) {
+    $('results').textContent = error.message;
+    $('results').className = 'error';
+    $('nearby').innerHTML = ''; $('dimensions').innerHTML = ''; selected = null; draw(null); $('downloadSTL').disabled = true;
+    return;
+  }
+  $('results').className = '';
+}
+function downloadSTL(n) {
+  try {
+    const width = 9;
+    const model = PulleyMesh.mesh(n, width);
+    const blob = new Blob([PulleyMesh.binarySTL(model)], { type: 'model/stl' });
+    const url = URL.createObjectURL(blob), link = document.createElement('a');
+    link.href = url;
+    link.download = `HTD5M_${n}T_OD${M.dimensions(n).od.toFixed(3)}mm_W9mm_fit${model.relief.toFixed(2)}mm_solid.stl`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    $('downloadStatus').className = 'note';
+    $('downloadStatus').textContent = `Downloaded ${link.download}. Import as millimeters and print at 100% scale.`;
+  } catch (error) {
+    $('downloadStatus').className = 'error';
+    $('downloadStatus').textContent = error.message;
+  }
+}
+$('units').addEventListener('change', () => {
+  const factor = previousUnits === 'in' ? 25.4 : 1 / 25.4;
+  ['odt'].forEach(id => { if ($(id).value.trim() !== '' && Number.isFinite(read(id))) $(id).value = Number((read(id) * factor).toPrecision(14)); });
+  previousUnits = $('units').value; updateInputBounds(); calc();
+});
+$('odt').addEventListener('input', () => { selected = null; calc(); });
+$('nearby').addEventListener('click', event => {
+  const button = event.target.closest('[data-teeth]');
+  if (button) { selected = Number(button.dataset.teeth); calc(); }
+});
+$('downloadSTL').addEventListener('click', () => downloadSTL(selected));
+function updateInputBounds() {
+  const factor = $('units').value === 'in' ? 25.4 : 1;
+  $('odt').min = M.dimensions(M.MIN_TEETH).od / factor;
+  $('odt').max = $('units').value === 'in' ? 12 : M.MAX_TARGET_OD;
+}
+updateInputBounds(); calc();
+</script>
+</body>
+</html>

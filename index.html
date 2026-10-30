@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTD 5M Pulley Sizing Calculator</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 24px auto; padding: 0 16px; max-width: 1100px; color: #222; line-height: 1.5; }
+  h1 { font-size: 26px; } h2 { font-size: 20px; }
+  .row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .column { flex: 1; min-width: min(100%, 340px); }
+  fieldset { border: 1px solid #bbb; padding: 12px 16px; border-radius: 6px; margin: 12px 0; }
+  legend { font-weight: bold; }
+  label { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 10px 0; }
+  input, select, button { padding: 7px; font: inherit; } input { width: 110px; }
+  button { cursor: pointer; } :focus-visible { outline: 3px solid #185fa5; outline-offset: 2px; }
+  .note { color: #444; font-size: 14px; } .status { padding: 12px; border-left: 4px solid #187052; background: #eef8f2; }
+  .warning { border-left-color: #a34711; background: #fff3e7; } .error { color: #9a2418; }
+  svg { width: 100%; height: auto; border: 1px solid #ddd; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+  th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid #ddd; } th:first-child, td:first-child { text-align: left; }
+  dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } dt { font-weight: bold; } dd { margin: 0; }
+  details { margin: 20px 0; } summary { cursor: pointer; font-weight: bold; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #f3f6fa; }
+  tbody tr.selected { background: #edf4fc; }
+  .row-download { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .stl-icon { width: 16px; height: 16px; border: 0; flex: none; }
+  button:disabled { cursor: default; opacity: .5; }
+</style>
+</head>
+<body>
+<h1>HTD 5M pulley sizing calculator</h1>
+<p>For your VEX HTD 5 mm belt: enter a target diameter, choose a nearby size, and download its STL.
+  Save this HTML file and open it in your browser; generation works offline.</p>
+<p class="note">To share, email just <strong>index.html</strong>. All code and images are included. Reference links are optional and require internet access.</p>
+<p class="note">Fixed profile: 5 mm pitch · pitch-line differential 0.5715 mm · outside diameter = pitch diameter − 1.143 mm.
+  <a href="#references">Manufacturer reference and CAD</a>.</p>
+<div class="row">
+<section class="column" aria-label="Pulley selection">
+<fieldset>
+  <legend>Target diameter</legend>
+  <label for="units">Diameter input units <select id="units"><option value="in">inches</option><option value="mm">millimeters</option></select></label>
+  <label for="odt">Target outside diameter <input id="odt" type="number" step="any" min="0" max="12" value="7"></label>
+  <p class="note">Choose a nearby size below to inspect its dimensions. Maximum target: 12 in (304.8 mm). Available options stay within this limit.</p>
+</fieldset>
+<div id="results" aria-live="polite" aria-atomic="true"></div>
+<div id="nearby"></div>
+</section>
+<section class="column" aria-label="Pulley dimensions">
+<svg id="svg" viewBox="0 0 480 480" role="img" aria-label="Generated pulley tooth outline and pitch circle"></svg>
+<p class="note">Preview uses the same tooth outline as the STL. Blue dashed line = pitch circle. Print at 100% scale, interpreting STL coordinates as millimeters.</p>
+<div id="dimensions"></div>
+<button id="downloadSTL" type="button" class="row-download" disabled><svg class="stl-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download STL</button>
+<p id="downloadStatus" class="note" aria-live="polite"></p>
+<p class="note">STL face width: 9 mm. Grooves include 0.10 mm of local print-fit allowance; pitch and outside diameter stay fixed. Add mounting features later in CAD.</p>
+</section>
+</div>
+<details open>
+<summary>Making a pulley that fits</summary>
+<ol>
+  <li>Use the selected tooth count and nominal outside diameter. Repeat the proper HTD 5M groove at the displayed angular spacing; do not distribute 5 mm along the outside circumference.</li>
+  <li>The exporter starts from the count-dependent ISO 13050:2022 H5M profile and applies a 0.10 mm local groove allowance for printing. Pitch and outside diameter stay fixed; do not scale it to another diameter.</li>
+  <li>Provide belt-width clearance, suitable flanges, and the required bore and hub. This calculator does not size these features or assess belt tension, loads, or service life.</li>
+  <li>Print a test ring or prototype at 100% scale. Check roundness, groove seating, and engagement around the full ring with the actual belt before printing the final pulley.</li>
+</ol>
+<p>Nominal dimensions do not guarantee a printed fit. Groove shape, belt seating, printer accuracy, and belt condition must also be checked. Change manufacturing clearance locally only after checking pitch and scale.</p>
+</details>
+<details>
+<summary>3D printing notes</summary>
+<ul>
+  <li>Print flat, with the shaft axis vertical, so the tooth shape is formed in the XY plane. Use the matching material profile and calibrate extrusion flow.</li>
+  <li>With a 0.4 mm nozzle, start with 0.16–0.20 mm layers, moderate outer-wall speed, and enough walls to keep the teeth solid. Inspect the sliced tooth paths.</li>
+  <li>Compensate and remove first-layer bulging. Keep seams and blobs away from groove flanks, and do not let a brim fill the grooves.</li>
+  <li>Measure the printed diameter in multiple directions. Check belt seating through the full intended wrap; a short sector cannot reveal accumulated pitch error.</li>
+  <li>PLA is suitable for a first fit test. PETG offers more temperature margin, but material choice, mounting, alignment, belt tension, and operating load still need validation.</li>
+</ul>
+<p class="note">The fit allowance was checked with assumed print errors, not measured printer accuracy or a scan of your particular belt. It cannot compensate for a badly scaled or distorted print.</p>
+</details>
+<details>
+<summary>Formulas and terms</summary>
+<p>All calculations use millimeters internally. For tooth count N: pitch diameter = N × 5 / π;
+  outside diameter = pitch diameter − 2 × 0.5715; angular spacing = 360° / N;
+  full pitch circumference = N × 5. Pitch is measured along the belt’s pitch line, not as a straight chord between pulley teeth.</p>
+<p>The pitch circle coincides with the seated belt’s pitch line. It is an imaginary reference above the pulley tooth tips, not a circle through the groove centers.
+  Full pitch circumference is not the contact length of a partially wrapped belt.</p>
+</details>
+<section id="references">
+<h2>Manufacturer profile reference and CAD</h2>
+<p><a href="https://my.misumi-ec.com/pdf/my/economy_catalog/misumi_economy_timing_pulleys_idlers_timing_belts.pdf">MISUMI timing pulley catalog (online PDF)</a>:
+  contains pulley dimensional tables (printed pages 541–542) and belt pitch-line data (page 589). The groove drawing below is from MISUMI’s matching HTD 5M product page.
+</p>
+<figure><img src="data:image/jpeg;base64,/9j/4QAYRXhpZgAASUkqAAgAAAAAAAAAAAAAAP/sABFEdWNreQABAAQAAABkAAD/4QN8aHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA2LjAtYzAwMiA3OS4xNjQ0NjAsIDIwMjAvMDUvMTItMTY6MDQ6MTcgICAgICAgICI+IDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdFJlZj0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlUmVmIyIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6YmE3YTI1NDEtYjVlZS1iMTQ2LWFhZTAtMmZmYmRjZGM3Yzg3IiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOkRERUY5RDNGMjdFNjExRUNCQjcwRDcxMkQ2MjY0QjZBIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOkRERUY5RDNFMjdFNjExRUNCQjcwRDcxMkQ2MjY0QjZBIiB4bXA6Q3JlYXRvclRvb2w9IkFkb2JlIFBob3Rvc2hvcCAyMS4yIChXaW5kb3dzKSI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjhlMzlmNzhlLTM2OWItYzk0ZC05ZTQxLTBiYjQ0M2EzZjYyMSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpiYTdhMjU0MS1iNWVlLWIxNDYtYWFlMC0yZmZiZGNkYzdjODciLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz7/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAgICAgICAgICAgIDAwMDAwMDAwMDAQEBAQEBAQIBAQICAgECAgMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwP/wAARCACjANADAREAAhEBAxEB/8QBogAAAAYCAwEAAAAAAAAAAAAABwgGBQQJAwoCAQALAQAABgMBAQEAAAAAAAAAAAAGBQQDBwIIAQkACgsQAAIBAwQBAwMCAwMDAgYJdQECAwQRBRIGIQcTIgAIMRRBMiMVCVFCFmEkMxdScYEYYpElQ6Gx8CY0cgoZwdE1J+FTNoLxkqJEVHNFRjdHYyhVVlcassLS4vJkg3SThGWjs8PT4yk4ZvN1Kjk6SElKWFlaZ2hpanZ3eHl6hYaHiImKlJWWl5iZmqSlpqeoqaq0tba3uLm6xMXGx8jJytTV1tfY2drk5ebn6Onq9PX29/j5+hEAAgEDAgQEAwUEBAQGBgVtAQIDEQQhEgUxBgAiE0FRBzJhFHEIQoEjkRVSoWIWMwmxJMHRQ3LwF+GCNCWSUxhjRPGisiY1GVQ2RWQnCnODk0Z0wtLi8lVldVY3hIWjs8PT4/MpGpSktMTU5PSVpbXF1eX1KEdXZjh2hpamtsbW5vZnd4eXp7fH1+f3SFhoeIiYqLjI2Oj4OUlZaXmJmam5ydnp+So6SlpqeoqaqrrK2ur6/9oADAMBAAIRAxEAPwDf49+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3XvfuvdJbKbz27ht07V2ZkK1odxb1p9xVe3aIU1TItdBtWnoKrOO1THE1NTfaQ5OEgSuhk12W5Bt7r3Sp9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3XvfuvdFE+XFLsfJYnq3Ddh9jbY2JtrOdh1WIkod319XjMNuvJVmxN4/weJK6BTSxZjZ2Rjj3FQiraGmaqxKBpYm0SL7r3QI9ZbE7M2V3/ANQVPaWaxGdzG6q3uPI4nIYbcWU3LBXYPBdT9P7ShztVV5PF4n7HIbprMJNkZaSFJoqc1AHnmYs/v3XurKffuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3RNvl92HsXq6DqbeW/MHBuCix26t7RYrGV2axWKxWQy1d1Dv6hhxGSpczTzUebjzUNS9KlNcOHkEqrKY/E/uvdAn1CKTGd39QbJh2bgdj5DYG5vkbgc9idl5vN5zrtsvX7K6w3FK+wXzvjqcRh6any0cFTjooaenoshHOqRqCffuvdWa+/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xui0fKLd1JtDZe362s2VsjdEVRvDHpFnezMZV5Lr7r2spKLIZGi3buQYvDZ7M0jPUUgx9DNS0+tchXQh5Ioy7e/de6LZ1PvXL797i6KzuYjWaWXPfJl6bOYueqqNj7ihrNuddV0+Q64kyeC27nf7qU9dPLTsK+neoGRiqbTzppf37r3VlXv3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xui1dvVNVD3d8V4Yaqqhgqt49kpVwQ1E0UFWkfVu4JI0q4Y3WKpSKUB1DhgrgEWIv7917oyvv3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de6LR2R/2Uv8AGX/tQd9/+6LY/v3XujL+/de697917r3v3Xuve/de6YqTdO2a/MVu3qDcWCrc/jVL5HB0mXx9TmMegKqXrcZDUPW0qhnUXkRRcj+vv3XupNHmsXkanMUVDVx1VXgauOgy9PEHMlFWTUNLk4qeQFVDSSUNbFINJIs4/PHv3Xui/VPfe9a9qqLZnxm7vz7pLNDRV24Ydi9d4auakmMNUzPu7edHuOhi/bYwPLi1SpsrRkxuJPfuvdYqrcHy5zHjqMJ1v0dsyBUHkoN4dj7t3Vkp2ks6MZtr7LxOOx706+iWISVamTlJWUXPuvdO+1cf8pP7yYus3vujo4bVacyZrA7X2lvY5mOmaBwKTF7iyu6BSyyxVBU+aWgUOoP7aki3uvdDNHQ55dy1GRkz0Em2pMNTUdPtoYeJKmnzUdZPNU5ps+KwzTw1NG8cIpDTqsZjL6yW0j3Xugd3P0vu/de48vlaj5C9w7dwdXURVGH2tsltibfpMHaHxTQDKVGzMtl8rTykawtRKxR7kE8Ae690zp8ZcdUgncHdPyQ3LKhtTTVHcmf2waSI8yQpB13FsqjqxI4DF6qKolW1kdVup917rPD8YdnQzQzL2F8hWaCaKZVl+Q/cEsTtDIsipLFJu5o5omK2ZGBVlJBBB9+690m+98HTZjvD4lpUVubpRBuztunX+E5zJ4jyLkOnNzUEr1Jx9RAamWCKUvTu5LU84WWMq6hh7r3T+Pi3s0AD/SJ8iTYAXPyM7jJNha5J3hcn37r3TZnPiVtHM4bK4iLtj5O4KXJ0FTQx5rBfJLtulzeJeojMYyGJqarc1bTQZCmJ1RPJDKisOVP09+690X+H+W5T0LrVYz5y/wAxiPIQKxpJMr8rNxZzHpOUKpJWYiuw32eQiUm5jk9Lf4e/de6GYfESGDauNxFL318jp9z0aYiOs3nm+6uycjU5f7SrppMvNWYOh3XhsLDU5mhjlhBgjijpXlEiISgU+69037++LG4paKgHVXa/ZGLyQqmOUl7A7s7/AM/QyUPiPjTHwYLsvBzQVfnsWeR3QpwFvz7917oLP9lv+R1HKvlztDuGlpipmaj+VXyz2vkcxGijyCmSozu48fg6qpN9Ov7yKEnnWB7917rEev8AeuHnmh3V098vqlF0R09b1n8yc3vehqp2HkfQu5eyuuMrT0ccZA8s1LGxlBUJpAdvde6F/bPS/X24toybzq91fLHZuPpoclUZDH767s7u23nMbBifKa2esxdRu+SUU6pCzpLGZI5oxrjZlIJ917pxbpDqCLbmP3fVd0d3UG18pSUFdQZ7KfJvtrFYyppcpEk+PlWqyO86WNfvIpFKKxDNf6X9+6909Y/429e5aipsjiu0u/Mnj6yJZ6Svx/yV7crKKqgcXSamqqbeckE8Tj6MrEH37r3Uz/ZXNm/8/E+RH/pRfcf/ANl/v3Xuib9v9D5TFfMn4Z7X29P3fn+ud17Y+UD9i74qvk/2rSZvYVbgtrdeVmy1xOOn3a1ZlqXc1fNU0tUsBUxWjkc6Vsfde6s62ntqk2ft7G7boMhn8pSYuOWKGv3RuDL7pz1QJqiapZsjn87V12WyMivMVVppXZYwqCyqAPde6UXv3XugA3L153Vu3P5SR+9ZNh7MOQH8HwfXmxsDHuZsSsUasuX3hvB90xGvneSUXpMdTrHpjZSSGB917pnPxO6qyZgl3zV9jdp1ELB2fsntDfO46CeR101Xl22maodpLS19h56WPHx0bhQPCFFvfuvdCnsvqLqzrmTzbC672Xs+p+0+was27tvE4qvlojIJjST19JSxVlRTmVQ2l3YagD+PfuvdCJ7917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xuiydxf8zz+KH/h59mf++p3D7917ozfv3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de6Ytx7X21vDGPhd2bewm58PJNDUSYncGLocxjZJ6d/JTzPQ5CCopnlgflGK3U8j37r3QIV/xM+PtVWfxPG9eUWzsqJ2qlyvXWWz/XGQWrIAiqWn2PlcD55aRhqg8odYWJKAFmv7r3TfJ0f2fttjL1p8j+waGGJJPttv9pY7Cds4PWdPigkyeRhwu+mp0RAoaTMTTAksWc8e/de6SW/t047DfJ34YbS3runa1P2JunZ3yE/h+IppzjH3Xk8BtDYNbuuo2nh66pqchPQY2NzUOhklenp2Uux+vv3Xujk+/de697917r3v3Xuve/de697917pN57eW0NrGnXc+6tt7cas8n2gz2cxmINV4dPm+3GQqqcz+LWNWm+m4v7917qVgty7d3RSyV22s/hdxUUM7Us1ZgsrQ5aliqURJGp5KignqIknWORWKEhgGBtYj37r3T17917r3v3Xuve/de697917r3v3Xuve/de6CfsDrSq3nuzrTdtDuH+BV/W1fu7JUKNjI8nFW1e5tn5Pa1O80clVS2jxkuQFSUv8AvePQSoOoe690gh118mABf5LbZJsLkdBYoXP5Nv8ASCbXPv3Xuu/9HXyX/wC8lds/+iCxP/2wPfuvde/0dfJf/vJX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8DO0t5biwCxR4rNbi2V0lk8jTU8FSlbBRvU1PabyVePgrY1mSnmMkCTDWEDc+/de6CrvHa3yL7o7d+NXbe0upewtjYn45723LvjEbayWW6Oar35NunZOa68yWN3PFkt111Xtali25uKtEIoppJRUNFMXKp4m917oOYOgMRgfln1r8ocD8WO09j5TrXZW/to1PXezevulMrg8xmexMjRZTcG6qfsD/TRisgayCtx0Ypmhx0MDxyVHkiZ5tae690fP/Zgt0jl/i/8AI1UBGthi+qZCiX9TiOLtl5ZCq86VUs1rAE8e/de6b0+VWD1qKjpj5L0cOsCeqqOj91tBSxhrS1EwpUqZ3hgW7N4kkcqPSrGwPuvdVk98f8KM/wCWN8Y/k/l/iz3t2H2N17unEYLamaq945bqPfa7NoZN10cuQp8PnKd8RFvbAZOjoDBUOajDimenqonSYgkD3Xujh9I/Kz48fNLvvrrffxn7i2N3d19sfpvfOYrs5sTLx1ybezG/M/tHG4mHcFNIKfI4+fM4rAVRgpqiGOVft3cqOL+691Yv7917r3v3Xuve/de697917r3v3Xuve/de697917r3v3Xuve/de697917r3v3XuuIVVLFVVS7anIABdtKpqYj9TaEAufwAPfuvdcvfuvde9+691737r3QS979e1na3T/YHXuOmoqfJbn2/UUOMlyes4xcnFLDW44ZNY4Z5JMa9bSotQqoxeEsByffuvdI/dvxK+MPZWLyFD2b8b+hN6NuF6eu3Omd6m2Pl4sxlkmhrZa2rlyODnqqub7+ISLJK7SkgEkn37r3RgaKio8bR0mOx9LBRUFBSwUVDR0sSQU1JR0sSQU1LTQRhY4YIIY1REUBVUADj37r3Un37r3Xvfuvde9+691737r3Xvfuvde9+690Beb+MHxu3NvvP9obl6C6b3J2PumhxeM3HvrcPWuz85uvN47CwLS4mhyWdymHq8jVUuPpkWOJGkKoiKALKtvde64bN6fp9n9vbj3niMVtTAbP/ANGmzuvtmYDbGKpsIMRS4jNbizWbhqcfj6Olx32clTkab7QJ/mlSRQqhufde6Hf37r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3Xvfuvde9+691737r3X/2Q==" width="201" height="171" alt="MISUMI HTD 5M pulley groove drawing showing 2.16 mm depth, R1.56 and R0.5 radii, approximately 14 degree flank angle, and 0.572 mm rounded pitch-line offset"><figcaption class="note">MISUMI HTD 5M pulley groove reference, dimensions in mm. <a href="https://th.misumi-ec.com/en/vona2/detail/110310532889/">Manufacturer product page</a>. MISUMI notes groove dimensions vary slightly with tooth count. This manufacturer illustration is a general reference; STL geometry uses the count-dependent ISO construction below.</figcaption></figure>
+<p>The base profile follows <a href="https://www.iso.org/standard/82453.html">ISO 13050:2022</a>, Table 14 and Figure 11,
+  for 12–200 H5M grooves. The exported profile adds 0.10 mm of root/flank clearance and reblends to the unchanged outside circle. It uses four parameter bands, not a scaled circle or a traced picture. Root arcs, straight flanks, and tip blends are tangent; tip blends meet the selected outside circle. Arcs are meshed to at most 0.002 mm chordal deviation before STL coordinate rounding. This is not an ISO certification or a tested VEX part.</p>
+<p><a href="https://www.traceparts.com/en/product/gates-pulley-htd-5m?Product=32-30092010-109669">Gates HTD 5M manufacturer CAD catalog on TraceParts</a>
+  offers CAD for listed stock tooth counts; downloads may require sign-in. This is an alternative source for stock manufacturer models.</p>
+</section>
+<script>
+/* HTD 5M nominal sizing. Source: references/README.md. Units: mm. */
+(function (root) {
+  'use strict';
+  const PITCH = 5;
+  const PLD = 0.5715;
+  const MIN_TEETH = 12; // Supported sizing range; not a load-capacity recommendation.
+  const MAX_TEETH = 2000; // Diagnostic calculation limit, not the target-size limit.
+  const MAX_TARGET_OD = 304.8; // 12 inches, a hard application limit.
+  const MAX_OPTION_TEETH = Math.floor((MAX_TARGET_OD + 2 * PLD) * Math.PI / PITCH);
+  function dimensions(n) {
+    if (!Number.isInteger(n) || n < MIN_TEETH || n > MAX_TEETH) {
+      throw new Error(`Tooth count must be a whole number from ${MIN_TEETH} to ${MAX_TEETH}.`);
+    }
+    return { n, pd: n * PITCH / Math.PI, od: n * PITCH / Math.PI - 2 * PLD,
+      circumference: n * PITCH, angle: 360 / n };
+  }
+  function options(target) {
+    const min = dimensions(MIN_TEETH).od, max = MAX_TARGET_OD;
+    // Allow only floating-point roundoff at unit-converted boundaries.
+    const epsilon = 32 * Number.EPSILON * max;
+    if (!Number.isFinite(target) || target < min - epsilon || target > max + epsilon) {
+      throw new Error(`Enter a target outside diameter from ${min.toFixed(3)} to ${max.toFixed(3)} mm.`);
+    }
+    target = Math.max(min, Math.min(max, target));
+    const nearest = Math.max(MIN_TEETH, Math.min(MAX_OPTION_TEETH, Math.round((target + 2 * PLD) * Math.PI / PITCH)));
+    const nearby = [];
+    for (let n = Math.max(MIN_TEETH, nearest - 2); n <= Math.min(MAX_OPTION_TEETH, nearest + 3); n++) {
+      const d = dimensions(n);
+      nearby.push({ ...d, difference: d.od - target });
+    }
+    return { nearest, nearby };
+  }
+  function diagnose(n, measuredOD, intervals) {
+    const nominal = dimensions(n);
+    if (!Number.isFinite(measuredOD) || measuredOD <= 0) throw new Error('Measured outside diameter must be positive.');
+    if (!Number.isInteger(intervals) || intervals < 1 || intervals > MAX_TEETH) {
+      throw new Error(`Check intervals must be a whole number from 1 to ${MAX_TEETH}.`);
+    }
+    // Estimate assumes the nominal pitch-line differential and full belt seating.
+    // OD alone cannot establish the actual belt pitch line or validate groove geometry.
+    const effectivePitch = Math.PI * (measuredOD + 2 * PLD) / n;
+    const error = effectivePitch - PITCH;
+    return { nominal, effectivePitch, error, percent: error / PITCH * 100,
+      drift: error * intervals, halfPitchIntervals: Math.abs(error) < 1e-12 ? Infinity : PITCH / 2 / Math.abs(error),
+      diameterError: measuredOD - nominal.od };
+  }
+  const api = { PITCH, PLD, MIN_TEETH, MAX_TEETH, MAX_TARGET_OD, MAX_OPTION_TEETH, dimensions, options, diagnose };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.PulleyMath = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/* Earcut 2.2.4
+ISC License
+
+Copyright (c) 2016, Mapbox
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+
+*/
+!function(e){"object"==typeof exports&&"undefined"!=typeof module?module.exports=e():"function"==typeof define&&define.amd?define([],e):("undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:this).earcut=e()}(function(){return function r(x,i,u){function f(n,e){if(!i[n]){if(!x[n]){var t="function"==typeof require&&require;if(!e&&t)return t(n,!0);if(o)return o(n,!0);throw(e=new Error("Cannot find module '"+n+"'")).code="MODULE_NOT_FOUND",e}t=i[n]={exports:{}},x[n][0].call(t.exports,function(e){return f(x[n][1][e]||e)},t,t.exports,r,x,i,u)}return i[n].exports}for(var o="function"==typeof require&&require,e=0;e<u.length;e++)f(u[e]);return f}({1:[function(e,n,t){"use strict";function r(e,n,t){t=t||2;var r,x,i,u,f,o=n&&n.length,v=o?n[0]*t:e.length,p=s(e,0,v,t,!0),y=[];if(p&&p.next!==p.prev){if(o&&(p=function(e,n,t,r){var x,i,u,f,o=[];for(x=0,i=n.length;x<i;x++)f=n[x]*r,u=x<i-1?n[x+1]*r:e.length,(f=s(e,f,u,r,!1))===f.next&&(f.steiner=!0),o.push(function(e){var n=e,t=e;for(;(n.x<t.x||n.x===t.x&&n.y<t.y)&&(t=n),n=n.next,n!==e;);return t}(f));for(o.sort(c),x=0;x<o.length;x++)t=function(e,n){var t=function(e,n){var t,r=n,x=e.x,i=e.y,u=-1/0;do{if(i<=r.y&&i>=r.next.y&&r.next.y!==r.y){var f=r.x+(i-r.y)*(r.next.x-r.x)/(r.next.y-r.y);if(f<=x&&u<f&&(u=f,t=r.x<r.next.x?r:r.next,f===x))return t}}while(r=r.next,r!==n);if(!t)return null;var o,v=t,p=t.x,y=t.y,a=1/0;r=t;for(;x>=r.x&&r.x>=p&&x!==r.x&&D(i<y?x:u,i,p,y,i<y?u:x,i,r.x,r.y)&&(o=Math.abs(i-r.y)/(x-r.x),_(r,e)&&(o<a||o===a&&(r.x>t.x||r.x===t.x&&function(e,n){return E(e.prev,e,n.prev)<0&&E(n.next,e,e.next)<0}(t,r)))&&(t=r,a=o)),r=r.next,r!==v;);return t}(e,n);if(!t)return n;n=j(t,e);return q(n,n.next),q(t,t.next)}(o[x],t);return t}(e,n,p,t)),e.length>80*t){for(var a=r=e[0],l=x=e[1],h=t;h<v;h+=t)(i=e[h])<a&&(a=i),(u=e[h+1])<l&&(l=u),r<i&&(r=i),x<u&&(x=u);f=0!==(f=Math.max(r-a,x-l))?32767/f:0}O(p,y,t,a,l,f,0)}return y}function s(e,n,t,r,x){var i,u;if(x===0<d(e,n,t,r))for(i=n;i<t;i+=r)u=f(i,e[i],e[i+1],u);else for(i=t-r;n<=i;i-=r)u=f(i,e[i],e[i+1],u);return u&&N(u,u.next)&&(C(u),u=u.next),u}function q(e,n){if(!e)return e;n=n||e;var t,r=e;do{if(t=!1,r.steiner||!N(r,r.next)&&0!==E(r.prev,r,r.next))r=r.next;else{if(C(r),(r=n=r.prev)===r.next)break;t=!0}}while(t||r!==n);return n}function O(e,n,t,r,x,i,u){if(e){if(!u&&i){for(var f=e,o=r,v=x,p=i,y=f;0===y.z&&(y.z=k(y.x,y.y,o,v,p)),y.prevZ=y.prev,y.nextZ=y.next,(y=y.next)!==f;);y.prevZ.nextZ=null,y.prevZ=null;var a,l,h,s,c,d,Z,g,w=y,M=1;do{for(l=w,c=w=null,d=0;l;){for(d++,h=l,a=Z=0;a<M&&(Z++,h=h.nextZ);a++);for(g=M;0<Z||0<g&&h;)0!==Z&&(0===g||!h||l.z<=h.z)?(l=(s=l).nextZ,Z--):(h=(s=h).nextZ,g--),c?c.nextZ=s:w=s,s.prevZ=c,c=s;l=h}}while(c.nextZ=null,M*=2,1<d)}for(var b,m,z=e;e.prev!==e.next;)if(b=e.prev,m=e.next,i?function(e,n,t,r){var x=e.prev,i=e,u=e.next;if(0<=E(x,i,u))return;var f=x.x,o=i.x,v=u.x,p=x.y,y=i.y,a=u.y,l=f<o?f<v?f:v:o<v?o:v,h=p<y?p<a?p:a:y<a?y:a,s=o<f?v<f?f:v:v<o?o:v,c=y<p?a<p?p:a:a<y?y:a,d=k(l,h,n,t,r),Z=k(s,c,n,t,r),g=e.prevZ,w=e.nextZ;for(;g&&g.z>=d&&w&&w.z<=Z;){if(g.x>=l&&g.x<=s&&g.y>=h&&g.y<=c&&g!==x&&g!==u&&D(f,p,o,y,v,a,g.x,g.y)&&0<=E(g.prev,g,g.next))return;if(g=g.prevZ,w.x>=l&&w.x<=s&&w.y>=h&&w.y<=c&&w!==x&&w!==u&&D(f,p,o,y,v,a,w.x,w.y)&&0<=E(w.prev,w,w.next))return;w=w.nextZ}for(;g&&g.z>=d;){if(g.x>=l&&g.x<=s&&g.y>=h&&g.y<=c&&g!==x&&g!==u&&D(f,p,o,y,v,a,g.x,g.y)&&0<=E(g.prev,g,g.next))return;g=g.prevZ}for(;w&&w.z<=Z;){if(w.x>=l&&w.x<=s&&w.y>=h&&w.y<=c&&w!==x&&w!==u&&D(f,p,o,y,v,a,w.x,w.y)&&0<=E(w.prev,w,w.next))return;w=w.nextZ}return 1}(e,r,x,i):function(e){var n=e.prev,t=e,e=e.next;if(0<=E(n,t,e))return;var r=n.x,x=t.x,i=e.x,u=n.y,f=t.y,o=e.y,v=r<x?r<i?r:i:x<i?x:i,p=u<f?u<o?u:o:f<o?f:o,y=x<r?i<r?r:i:i<x?x:i,a=f<u?o<u?u:o:o<f?f:o,l=e.next;for(;l!==n;){if(l.x>=v&&l.x<=y&&l.y>=p&&l.y<=a&&D(r,u,x,f,i,o,l.x,l.y)&&0<=E(l.prev,l,l.next))return;l=l.next}return 1}(e))n.push(b.i/t|0),n.push(e.i/t|0),n.push(m.i/t|0),C(e),e=m.next,z=m.next;else if((e=m)===z){u?1===u?O(e=function(e,n,t){var r=e;do{var x=r.prev,i=r.next.next}while(!N(x,i)&&U(x,r,r.next,i)&&_(x,i)&&_(i,x)&&(n.push(x.i/t|0),n.push(r.i/t|0),n.push(i.i/t|0),C(r),C(r.next),r=e=i),r=r.next,r!==e);return q(r)}(q(e),n,t),n,t,r,x,i,2):2===u&&function(e,n,t,r,x,i){var u=e;do{for(var f,o=u.next.next;o!==u.prev;){if(u.i!==o.i&&function(e,n){return e.next.i!==n.i&&e.prev.i!==n.i&&!function(e,n){var t=e;do{if(t.i!==e.i&&t.next.i!==e.i&&t.i!==n.i&&t.next.i!==n.i&&U(t,t.next,e,n))return 1}while(t=t.next,t!==e);return}(e,n)&&(_(e,n)&&_(n,e)&&function(e,n){var t=e,r=!1,x=(e.x+n.x)/2,i=(e.y+n.y)/2;for(;t.y>i!=t.next.y>i&&t.next.y!==t.y&&x<(t.next.x-t.x)*(i-t.y)/(t.next.y-t.y)+t.x&&(r=!r),t=t.next,t!==e;);return r}(e,n)&&(E(e.prev,e,n.prev)||E(e,n.prev,n))||N(e,n)&&0<E(e.prev,e,e.next)&&0<E(n.prev,n,n.next))}(u,o))return f=j(u,o),u=q(u,u.next),f=q(f,f.next),O(u,n,t,r,x,i,0),O(f,n,t,r,x,i,0);o=o.next}}while(u=u.next,u!==e)}(e,n,t,r,x,i):O(q(e),n,t,r,x,i,1);break}}}function c(e,n){return e.x-n.x}function k(e,n,t,r,x){return(e=1431655765&((e=858993459&((e=252645135&((e=16711935&((e=(e-t)*x|0)|e<<8))|e<<4))|e<<2))|e<<1))|(n=1431655765&((n=858993459&((n=252645135&((n=16711935&((n=(n-r)*x|0)|n<<8))|n<<4))|n<<2))|n<<1))<<1}function D(e,n,t,r,x,i,u,f){return(e-u)*(i-f)<=(x-u)*(n-f)&&(t-u)*(n-f)<=(e-u)*(r-f)&&(x-u)*(r-f)<=(t-u)*(i-f)}function E(e,n,t){return(n.y-e.y)*(t.x-n.x)-(n.x-e.x)*(t.y-n.y)}function N(e,n){return e.x===n.x&&e.y===n.y}function U(e,n,t,r){var x=v(E(e,n,t)),i=v(E(e,n,r)),u=v(E(t,r,e)),f=v(E(t,r,n));return x!==i&&u!==f||(0===x&&o(e,t,n)||(0===i&&o(e,r,n)||(0===u&&o(t,e,r)||!(0!==f||!o(t,n,r)))))}function o(e,n,t){return n.x<=Math.max(e.x,t.x)&&n.x>=Math.min(e.x,t.x)&&n.y<=Math.max(e.y,t.y)&&n.y>=Math.min(e.y,t.y)}function v(e){return 0<e?1:e<0?-1:0}function _(e,n){return E(e.prev,e,e.next)<0?0<=E(e,n,e.next)&&0<=E(e,e.prev,n):E(e,n,e.prev)<0||E(e,e.next,n)<0}function j(e,n){var t=new u(e.i,e.x,e.y),r=new u(n.i,n.x,n.y),x=e.next,i=n.prev;return(e.next=n).prev=e,(t.next=x).prev=t,(r.next=t).prev=r,(i.next=r).prev=i,r}function f(e,n,t,r){e=new u(e,n,t);return r?(e.next=r.next,(e.prev=r).next.prev=e,r.next=e):(e.prev=e).next=e,e}function C(e){e.next.prev=e.prev,e.prev.next=e.next,e.prevZ&&(e.prevZ.nextZ=e.nextZ),e.nextZ&&(e.nextZ.prevZ=e.prevZ)}function u(e,n,t){this.i=e,this.x=n,this.y=t,this.prev=null,this.next=null,this.z=0,this.prevZ=null,this.nextZ=null,this.steiner=!1}function d(e,n,t,r){for(var x=0,i=n,u=t-r;i<t;i+=r)x+=(e[u]-e[i])*(e[i+1]+e[u+1]),u=i;return x}n.exports=r,(n.exports.default=r).deviation=function(e,n,t,r){var x=n&&n.length,i=x?n[0]*t:e.length,u=Math.abs(d(e,0,i,t));if(x)for(var f=0,o=n.length;f<o;f++){var v=n[f]*t,p=f<o-1?n[f+1]*t:e.length;u-=Math.abs(d(e,v,p,t))}for(var y=0,f=0;f<r.length;f+=3){var a=r[f]*t,l=r[f+1]*t,h=r[f+2]*t;y+=Math.abs((e[a]-e[h])*(e[1+l]-e[1+a])-(e[a]-e[l])*(e[1+h]-e[1+a]))}return 0===u&&0===y?0:Math.abs((y-u)/u)},r.flatten=function(e){for(var n=e[0][0].length,t={vertices:[],holes:[],dimensions:n},r=0,x=0;x<e.length;x++){for(var i=0;i<e[x].length;i++)for(var u=0;u<n;u++)t.vertices.push(e[x][i][u]);0<x&&(r+=e[x-1].length,t.holes.push(r))}return t}},{}]},{},[1])(1)});
+
+</script>
+<script>
+/* Original HTD 5M construction from ISO 13050:2022 Table 14 / Figure 11.
+ * See references/README.md. This is a nominal prototype, not certified hardware.
+ * Includes a local print-fit groove allowance; nominal OD and pitch stay fixed.
+ * All coordinates are millimeters; arcs have <= 0.002 mm chordal deviation.
+ */
+(function (root) {
+  'use strict';
+  const M = typeof module !== 'undefined' && module.exports ? require('./pulley-math') : root.PulleyMath;
+  const earcut = typeof module !== 'undefined' && module.exports ? require('./vendor/earcut.min') : root.earcut;
+  const TOLERANCE = 0.002;
+  const PRINT_RELIEF = 0.10; // Chosen from the documented print-error sensitivity study.
+  const BANDS = [
+    { min: 12, max: 16, depth: 1.989, x: 0.307, rootRadius: 1.265, angle: 10, tipRadius: 0.432 },
+    { min: 17, max: 25, depth: 2.009, x: 0.320, rootRadius: 1.270, angle: 6, tipRadius: 0.508 },
+    { min: 26, max: 80, depth: 2.052, x: 0.081, rootRadius: 1.438, angle: 2, tipRadius: 0.488 },
+    { min: 81, max: 200, depth: 2.056, x: 0.028, rootRadius: 1.552, angle: 5, tipRadius: 0.569 }
+  ];
+  function profile(n) {
+    M.dimensions(n);
+    const band = BANDS.find(b => n >= b.min && n <= b.max);
+    if (!band) throw new Error('STL export supports 12–200 teeth, the published H5M groove ranges.');
+    return { ...band };
+  }
+  function arc(center, radius, start, end) {
+    const count = Math.max(1, Math.ceil(Math.abs(end - start) / (2 * Math.acos(1 - TOLERANCE / radius))));
+    return Array.from({ length: count + 1 }, (_, i) => {
+      const a = start + (end - start) * i / count;
+      return [center[0] + radius * Math.cos(a), center[1] + radius * Math.sin(a)];
+    });
+  }
+  function outline(n, relief = PRINT_RELIEF) {
+    if (!Number.isFinite(relief) || relief < 0 || relief > 0.15) throw new Error('Groove relief must be from 0 to 0.15 mm.');
+    const nominal = profile(n);
+    // Local groove relief leaves the pitch, tooth angles, and OD lands fixed.
+    // Offset root/flank surfaces into the material and reblend to the OD.
+    const p = { ...nominal, depth: nominal.depth + relief,
+      rootRadius: nominal.rootRadius + relief, tipRadius: nominal.tipRadius - relief };
+    const radius = M.dimensions(n).od / 2;
+    const phi = p.angle * Math.PI / 180;
+    // Positive local x goes across a groove; positive y goes radially outward.
+    // Root arcs start at +/-X and share a flat bottom at OD radius minus depth.
+    const center = [p.x, radius - p.depth + p.rootRadius];
+    const half = arc(center, p.rootRadius, -Math.PI / 2, -phi);
+    const tangent = half[half.length - 1];
+    const v = [Math.sin(phi), Math.cos(phi)];
+    const base = [tangent[0] + p.tipRadius * Math.cos(phi), tangent[1] - p.tipRadius * Math.sin(phi)];
+    const dot = base[0] * v[0] + base[1] * v[1];
+    const discriminant = dot * dot + (radius - p.tipRadius) ** 2 - base[0] ** 2 - base[1] ** 2;
+    const length = -dot + Math.sqrt(discriminant);
+    if (!Number.isFinite(length) || length < -1e-8) throw new Error('Cannot construct tangent groove for this size.');
+    const filletCenter = [base[0] + length * v[0], base[1] + length * v[1]];
+    const fillet = arc(filletCenter, p.tipRadius, Math.PI - phi, Math.atan2(filletCenter[1], filletCenter[0]));
+    half.push(...fillet); // straight flank joins the root arc to the OD blend
+    const beta = Math.atan2(half[half.length - 1][0], half[half.length - 1][1]);
+    const step = 2 * Math.PI / n;
+    if (!(beta > 0 && beta < step / 2)) throw new Error('Grooves overlap at this tooth count.');
+    const groove = [...half].reverse().concat(half.map(([x, y]) => [-x, y]));
+    const land = arc([0, 0], radius, Math.PI / 2 + beta, Math.PI / 2 + step - beta);
+    const sector = groove.concat(land.slice(1, -1));
+    const points = [];
+    for (let k = 0; k < n; k++) {
+      const a = k * step, c = Math.cos(a), s = Math.sin(a);
+      for (const [x, y] of sector) points.push([x * c - y * s, x * s + y * c]);
+    }
+    return { points, band: nominal, relief, radius, root: radius - p.depth, flankLength: length, halfOpeningAngle: beta };
+  }
+  function validate(n, width, testRing = false) {
+    if (!Number.isFinite(width) || width < 1 || width > 100) throw new Error('Belt width must be from 1 to 100 mm.');
+    const shape = outline(n);
+    const innerRadius = testRing ? shape.root - 3 : 0;
+    if (innerRadius < 0 || innerRadius > shape.root - 1.5) throw new Error('The test ring must leave at least 1.5 mm of material below the grooves.');
+    return { shape, innerRadius };
+  }
+  function mesh(n, width, testRing = false) {
+    const { shape, innerRadius } = validate(n, width, testRing);
+    const points = shape.points.map(p => p.map(Math.fround)), triangles = [];
+    // Triangulate the exact coordinates that STL will store. This avoids
+    // flipping very skinny cap triangles during later float32 rounding.
+    const at = (p, z) => [p[0], p[1], z];
+    const add = (a, b, c) => triangles.push([a, b, c]);
+    const rings = [points];
+    if (innerRadius > 0) {
+      const count = Math.max(64, Math.ceil(Math.PI / Math.acos(1 - TOLERANCE / innerRadius)));
+      rings.push(Array.from({ length: count }, (_, i) => {
+        const a = 2 * Math.PI * i / count;
+        return [Math.fround(innerRadius * Math.cos(a)), Math.fround(innerRadius * Math.sin(a))];
+      }));
+    }
+    const all = rings.flat(), holes = innerRadius > 0 ? [points.length] : [];
+    const indices = earcut(all.flat(), holes);
+    if (indices.length === 0) throw new Error('Unable to triangulate the pulley face.');
+    for (let i = 0; i < indices.length; i += 3) {
+      const [a, b, c] = indices.slice(i, i + 3).map(index => all[index]);
+      add(at(a, width), at(b, width), at(c, width));
+      add(at(c, 0), at(b, 0), at(a, 0));
+    }
+    rings.forEach((ring, index) => {
+      for (let i = 0; i < ring.length; i++) {
+        const j = (i + 1) % ring.length;
+        const a = at(ring[i], 0), b = at(ring[j], 0), A = at(ring[i], width), B = at(ring[j], width);
+        if (index === 0) { add(a, b, B); add(a, B, A); }
+        else { add(b, a, A); add(b, A, B); }
+      }
+    });
+    return { ...shape, triangles, width, bore: innerRadius * 2, testRing, n };
+  }
+  function binarySTL(model) {
+    const buffer = new ArrayBuffer(84 + 50 * model.triangles.length);
+    const view = new DataView(buffer);
+    const header = `HTD5M ${model.n}T ${model.width}mm; units=mm; groove+${model.relief.toFixed(2)}mm; prototype`;
+    new Uint8Array(buffer, 0, 80).set(new TextEncoder().encode(header).slice(0, 80));
+    view.setUint32(80, model.triangles.length, true);
+    let offset = 84;
+    for (const [a, b, c] of model.triangles) {
+      const u = b.map((v, i) => v - a[i]), v = c.map((v, i) => v - a[i]);
+      const normal = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+      const length = Math.hypot(...normal);
+      if (!Number.isFinite(length) || length < 1e-12) throw new Error('Degenerate STL facet.');
+      for (const value of [...normal.map(v => v / length), ...a, ...b, ...c]) { view.setFloat32(offset, value, true); offset += 4; }
+      view.setUint16(offset, 0, true); offset += 2;
+    }
+    return buffer;
+  }
+  const api = { profile, outline, validate, mesh, binarySTL, TOLERANCE, PRINT_RELIEF };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.PulleyMesh = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const M = PulleyMath;
+let previousUnits = $('units').value;
+let selected = null;
+const read = id => $(id).value.trim() === '' ? NaN : Number($(id).value);
+const mmAndIn = mm => `${mm.toFixed(3)} mm (${(mm / 25.4).toFixed(4)} in)`;
+function draw(n) {
+  if (n === null) {
+    $('svg').innerHTML = '<text x="240" y="220" text-anchor="middle">No size selected.</text><text x="240" y="245" text-anchor="middle">Choose a nearby tooth count to inspect.</text>';
+    return;
+  }
+  const d = M.dimensions(n), scale = 190 / (d.pd / 2);
+  let svg = '';
+  if (n <= 200) {
+    const points = PulleyMesh.outline(n).points;
+    svg += `<polygon points="${points.map(([x, y]) => `${240 + x * scale},${230 - y * scale}`).join(' ')}" fill="#e4e6ea" stroke="#555" stroke-width="0.8"/>`;
+  } else {
+    svg += `<circle cx="240" cy="230" r="${d.od / 2 * scale}" fill="#e4e6ea" stroke="#666"/>`;
+  }
+  svg += `<circle cx="240" cy="230" r="190" fill="none" stroke="#185fa5" stroke-dasharray="6 4"/><circle cx="240" cy="230" r="3"/><text x="240" y="450" text-anchor="middle">${n} teeth · ${n <= 200 ? 'STL outline' : 'dimensions only; no STL profile'}</text>`;
+  $('svg').innerHTML = svg;
+}
+function calc() {
+  $('downloadStatus').textContent = '';
+  try {
+    const factor = $('units').value === 'in' ? 25.4 : 1;
+    const target = read('odt') * factor;
+    const result = M.options(target);
+    if (selected === null || !result.nearby.some(d => d.n === selected)) selected = result.nearest;
+    $('results').innerHTML = `<p class="status">Closest size: <b>${result.nearest} teeth</b> · ${mmAndIn(M.dimensions(result.nearest).od)}</p>`;
+    const d = M.dimensions(selected);
+    $('dimensions').innerHTML = d ? `<h2>${d.n}-tooth nominal dimensions</h2><dl><dt>Outside diameter</dt><dd>${mmAndIn(d.od)}</dd><dt>Pitch diameter</dt><dd>${mmAndIn(d.pd)}</dd><dt>Angular spacing</dt><dd>${d.angle.toFixed(6)}°</dd><dt>Full pitch circumference</dt><dd>${d.circumference.toFixed(1)} mm</dd></dl><p class="note">Belt pitch: 5.000 mm. Keep these dimensions in CAD and print at 100% scale.</p>` : '';
+    $('nearby').innerHTML = '<h2>Nearby nominal sizes</h2><table><caption>Select a size to inspect its dimensions</caption><thead><tr><th>Teeth</th><th>OD (mm)</th><th>OD (in)</th><th>Select</th></tr></thead><tbody>' + result.nearby.map(d => `<tr data-teeth="${d.n}"${d.n === selected ? ' class="selected"' : ''}><td>${d.n}</td><td>${d.od.toFixed(3)}</td><td>${(d.od / 25.4).toFixed(4)}</td><td><button type="button" data-teeth="${d.n}" aria-pressed="${d.n === selected}" aria-label="Select ${d.n} teeth">Select</button></td></tr>`).join('') + '</tbody></table>';
+    $('downloadSTL').disabled = false;
+    draw(selected);
+  } catch (error) {
+    $('results').textContent = error.message;
+    $('results').className = 'error';
+    $('nearby').innerHTML = ''; $('dimensions').innerHTML = ''; selected = null; draw(null); $('downloadSTL').disabled = true;
+    return;
+  }
+  $('results').className = '';
+}
+function downloadSTL(n) {
+  try {
+    const width = 9;
+    const model = PulleyMesh.mesh(n, width);
+    const blob = new Blob([PulleyMesh.binarySTL(model)], { type: 'model/stl' });
+    const url = URL.createObjectURL(blob), link = document.createElement('a');
+    link.href = url;
+    link.download = `HTD5M_${n}T_OD${M.dimensions(n).od.toFixed(3)}mm_W9mm_fit${model.relief.toFixed(2)}mm_solid.stl`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    $('downloadStatus').className = 'note';
+    $('downloadStatus').textContent = `Downloaded ${link.download}. Import as millimeters and print at 100% scale.`;
+  } catch (error) {
+    $('downloadStatus').className = 'error';
+    $('downloadStatus').textContent = error.message;
+  }
+}
+$('units').addEventListener('change', () => {
+  const factor = previousUnits === 'in' ? 25.4 : 1 / 25.4;
+  ['odt'].forEach(id => { if ($(id).value.trim() !== '' && Number.isFinite(read(id))) $(id).value = Number((read(id) * factor).toPrecision(14)); });
+  previousUnits = $('units').value; updateInputBounds(); calc();
+});
+$('odt').addEventListener('input', () => { selected = null; calc(); });
+$('nearby').addEventListener('click', event => {
+  const button = event.target.closest('[data-teeth]');
+  if (button) { selected = Number(button.dataset.teeth); calc(); }
+});
+$('downloadSTL').addEventListener('click', () => downloadSTL(selected));
+function updateInputBounds() {
+  const factor = $('units').value === 'in' ? 25.4 : 1;
+  $('odt').min = M.dimensions(M.MIN_TEETH).od / factor;
+  $('odt').max = $('units').value === 'in' ? 12 : M.MAX_TARGET_OD;
+}
+updateInputBounds(); calc();
+</script>
+</body>
+</html>

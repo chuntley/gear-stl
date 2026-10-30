@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 620" width="720" height="620" font-family="Arial, Helvetica, sans-serif" role="img" aria-labelledby="title desc">
+<title id="title">HTD 5M nominal dimensions, 20 tooth example</title>
+<desc id="desc">Dimension diagram with pitch circle, outside diameter, and angular tooth positions. Not a tooth profile or cutting template.</desc>
+<rect width="720" height="620" fill="white"/>
+<text x="360" y="35" text-anchor="middle" font-size="20">HTD 5M · 20 tooth dimension example</text>
+<text x="360" y="65" text-anchor="middle" font-size="14">Positions only — use the included MISUMI groove reference for profile guidance.</text>
+<circle cx="360" cy="310" r="177.39285365838222" fill="#e4e6ea" stroke="#666"/>
+<circle cx="360" cy="310" r="184" fill="none" stroke="#185fa5" stroke-dasharray="6 4"/>
+<circle cx="360.0" cy="132.60714634161778" r="3" fill="#555"/>
+<circle cx="414.8174064611082" cy="141.28937058400302" r="3" fill="#555"/>
+<circle cx="464.2689032424739" cy="166.4861667097007" r="3" fill="#555"/>
+<circle cx="503.5138332902993" cy="205.73109675752605" r="3" fill="#555"/>
+<circle cx="528.710629415997" cy="255.18259353889184" r="3" fill="#555"/>
+<circle cx="537.3928536583823" cy="310.0" r="3" fill="#555"/>
+<circle cx="528.710629415997" cy="364.81740646110813" r="3" fill="#555"/>
+<circle cx="503.5138332902993" cy="414.2689032424739" r="3" fill="#555"/>
+<circle cx="464.2689032424739" cy="453.5138332902993" r="3" fill="#555"/>
+<circle cx="414.8174064611082" cy="478.710629415997" r="3" fill="#555"/>
+<circle cx="360.0" cy="487.39285365838225" r="3" fill="#555"/>
+<circle cx="305.1825935388919" cy="478.710629415997" r="3" fill="#555"/>
+<circle cx="255.73109675752607" cy="453.5138332902993" r="3" fill="#555"/>
+<circle cx="216.48616670970074" cy="414.268903242474" r="3" fill="#555"/>
+<circle cx="191.28937058400302" cy="364.8174064611082" r="3" fill="#555"/>
+<circle cx="182.60714634161778" cy="310.0" r="3" fill="#555"/>
+<circle cx="191.289370584003" cy="255.18259353889187" r="3" fill="#555"/>
+<circle cx="216.4861667097007" cy="205.73109675752607" r="3" fill="#555"/>
+<circle cx="255.73109675752602" cy="166.48616670970074" r="3" fill="#555"/>
+<circle cx="305.1825935388918" cy="141.28937058400302" r="3" fill="#555"/>
+<text x="360" y="530" text-anchor="middle" font-size="15">Pitch diameter = N × 5 / π = 31.831 mm (blue dashed)</text>
+<text x="360" y="555" text-anchor="middle" font-size="15">Outside diameter = pitch diameter − 1.143 = 30.688 mm</text>
+<text x="360" y="580" text-anchor="middle" font-size="15">Pitch line is 0.5715 mm radially above tooth tips · 18° spacing</text>
+<text x="360" y="605" text-anchor="middle" font-size="12">Dots are angular position markers, not groove centers. No fabrication profile shown.</text>
+</svg>

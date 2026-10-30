@@ -1,0 +1,36 @@
+{
+  "method": "Independent STL loading, triangle-plane sectioning, groove symmetry centroids, and pitch-line kinematics",
+  "local_groove_relief_mm": 0.1,
+  "cases": [
+    {
+      "teeth": 112,
+      "od_mm": 177.11053626292278,
+      "width_mm": 9,
+      "watertight_solid_and_ring": true,
+      "single_connected_body": true,
+      "valid_non_self_intersecting_cross_section": true,
+      "maximum_groove_spacing_error_mm": 9.036425208108767e-08,
+      "maximum_pitch_registration_drift_mm": 5.289486911755347e-08,
+      "poses_checked": 361,
+      "tooth_positions_checked_per_pose": 112
+    },
+    {
+      "teeth": 113,
+      "od_mm": 178.70208569384172,
+      "width_mm": 9,
+      "watertight_solid_and_ring": true,
+      "single_connected_body": true,
+      "valid_non_self_intersecting_cross_section": true,
+      "maximum_groove_spacing_error_mm": 2.1416670747953503e-07,
+      "maximum_pitch_registration_drift_mm": 1.431294812942455e-07,
+      "poses_checked": 361,
+      "tooth_positions_checked_per_pose": 113
+    }
+  ],
+  "undersized_control_drift_at_18_spaces_mm": -0.45143136456874977,
+  "limitations": [
+    "Checks nominal tooth indexing and mesh geometry, not measured VEX belt tooth contact.",
+    "No rubber deformation, tension, load, friction, printer shrinkage, or durability model.",
+    "A physical full-diameter test-ring fit check remains necessary."
+  ]
+}
